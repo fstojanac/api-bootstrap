@@ -4,7 +4,7 @@ import set from 'lodash/set';
 import cloneDeep from 'lodash/cloneDeep';
 import camelCase from 'lodash/camelCase';
 import astParser from '../graphQLParser';
-import database from '../database';
+import database, { boss } from '../database';
 import { filterOperators, filterType } from '../filter';
 
 function checkField(accessLevel, fieldPermissions, check) {
@@ -191,12 +191,44 @@ export class BaseModel {
     return this.databaseTableInstance();
   }
 
+  isAnonymous(accessLevel) {
+    const userGroups = accessLevel.toString(2);
+    for (let i = 0; i < userGroups.length; i++) {
+      if (parseInt(userGroups.charAt(userGroups.length - 1 - i), 0)) {
+        return (2 ** i === 128);
+      }
+    }
+    return false;
+  }
 
   isUserOrGuest(accessLevel) {
     const userGroups = accessLevel.toString(2);
     for (let i = 0; i < userGroups.length; i++) {
       if (parseInt(userGroups.charAt(userGroups.length - 1 - i), 0)) {
         return (2 ** i >= 32 && 2 ** i <= 64);
+      }
+    }
+    return false;
+  }
+
+  isLocationUser(accessLevel) {
+    const userGroups = accessLevel.toString(2);
+    for (let i = 0; i < userGroups.length; i++) {
+      if (parseInt(userGroups.charAt(userGroups.length - 1 - i), 0)) {
+        return (2 ** i >= 4 && 2 ** i <= 16);
+      }
+    }
+    return false;
+  }
+
+  filterByLocation(accessLevel, columnPermissions) {
+    const userGroups = accessLevel.toString(2);
+    for (let i = 0; i < userGroups.length; i++) {
+      if (parseInt(userGroups.charAt(userGroups.length - 1 - i), 0)) {
+        const applied = columnPermissions.filter(x => x.group === 2 ** i);
+        if (applied.length) {
+          return (2 ** i >= 4 && 2 ** i <= 16);
+        }
       }
     }
     return false;
@@ -256,7 +288,7 @@ export class BaseModel {
   }
 
   generateGraphQLTypeFields() {
-    const { sqlTable, uniqueKey, searchKey = [], permissions, fields, ...other } = this.graphQLType._typeConfig; // eslint-disable-line no-underscore-dangle, no-unused-vars
+    const { sqlDatabase, sqlTable, uniqueKey, searchKey = [], permissions, fields, ...other } = this.graphQLType._typeConfig; // eslint-disable-line no-underscore-dangle, no-unused-vars
 
     if (!sqlTable) {
       throw new Error(`"sqlTable" property is note defined on ${other.name} GraphQL type.`);
@@ -282,7 +314,12 @@ export class BaseModel {
       sqlConnectionJoins: new Map(),
     };
 
-    this.databaseTableInstance = () => database(sqlTable);
+    if (sqlDatabase) {
+      this.databaseTableInstance = () => boss(`${sqlDatabase}.${sqlTable}`);
+    } else {
+      this.databaseTableInstance = () => database(sqlTable);
+    }
+
     const typeFields = fields();
 
     Object.keys(typeFields).forEach((filedKey) => {
@@ -342,6 +379,7 @@ export class BaseModel {
       variables.push('\':\'');
       variables.push(`\`${tableAlias}\`.${uniqueKey}`);
     }
+
     return database.raw(`TO_BASE64(concat(${variables.join()})) ${columnAlias ? `as '${columnAlias}'` : ''}`);
   }
 
@@ -349,45 +387,35 @@ export class BaseModel {
     const requestedTables = new Set();
     parsedAST = this.checkReadPermission(context.request.user.accessLevel, sqlAST, parsedAST); // eslint-disable-line no-param-reassign
 
-    const appendIDSelect = (sqlTable = this.graphQLTypeFields.sqlTable, uniqueKey = this.graphQLTypeFields.uniqueKey, columnAlias, tableAlias = this.sqlAST.sqlTable) => {
-      const filterKeys = this.requestedFilterKeys(args.filter, sqlAST);
-      const typeName = camelCase(sqlTable);
-      const modelName = typeName.charAt(0).toUpperCase() + typeName.slice(1);
 
-      const variables = [`'${modelName}'`];
+    const appendSelect = (tableAlias, column, columnAlias, columnSqlAST, permissions) => {
+      if (columnSqlAST.sqlColumns.has('locationId') && this.filterByLocation(context.request.user.accessLevel, permissions)) {
+        const appliedRoles = context.request.user.locationAccessLevel.filter(userRole => (
+          permissions.filter(columnRole => (
+            columnRole.group === userRole.group && columnRole.read
+          )).length
+        ));
 
-      const tableAliases = tableAlias.split('.');
-      if (Array.isArray(uniqueKey)) {
-        uniqueKey.forEach((item) => {
-          variables.push('\':\'');
-          tableAlias = ''; // eslint-disable-line no-param-reassign
-          tableAliases.forEach(alias => (tableAlias = tableAlias.concat(`\`${alias}\`.`))); // eslint-disable-line
-          variables.push(`${tableAlias}${item}`);
-        });
+        if (appliedRoles.length) {
+          const locations = appliedRoles.reduce((a, b) => {
+            if (a.locationIds) {
+              return a.locationIds.concat(b.locationIds);
+            }
+            return a.concat(b.locationIds);
+          });
+          if (Array.isArray(locations)) {
+            const tableName = `\`${tableAlias}\`.\`${columnSqlAST.sqlTable === 'location' ? 'id' : 'location_id'}\``;
+            databaseInstance.select(database.raw(`IF(${tableName} IN (${locations.length ? locations.join() : 0}) OR ${tableName} IS NULL, \`${tableAlias}\`.\`${column}\`, 'not_permitted') as \`${columnAlias}\``));
+          } else {
+            const tableName = `\`${tableAlias}\`.\`${columnSqlAST.sqlTable === 'location' ? 'id' : 'location_id'}\``;
+            databaseInstance.select(database.raw(`IF(${tableName} IN (${locations.locationIds.length ? locations.locationIds.join() : 0}) OR ${tableName} IS NULL, \`${tableAlias}\`.\`${column}\`, 'not_permitted') as \`${columnAlias}\``));
+          }
+        }
       } else {
-        variables.push('\':\'');
-        variables.push(`\`${tableAlias}\`.${uniqueKey}`);
-      }
-      let date = null;
-      if (filterKeys.has('date')) {
-        date = filterKeys.get('date')['__eq'];
-      } else if (context.date) {
-        date = context.date;
-      } else {
-        date = database.raw('CURRENT_TIMESTAMP(6)');
-      }
-      return database.raw(`IF(${tableAlias}\`created\` <= ${date} AND ${tableAlias}\`expired\` > ${date},TO_BASE64(concat(${variables.join()})), NULL) ${columnAlias ? `as '${columnAlias}'` : ''}`);
-    };
-
-    const appendSelect = (tableAlias, column, columnAlias) => {
-      const filterKeys = this.requestedFilterKeys(args.filter, sqlAST);
-
-      if (filterKeys.has('date')) {
-        databaseInstance.select(database.raw(`IF(\`${tableAlias}\`.created <= ${filterKeys.get('date')['__eq']} AND \`${tableAlias}\`.expired > ${filterKeys.get('date')['__eq']},\`${tableAlias}\`.\`${column}\`, NULL) as \`${columnAlias}\``));
-      } else if (context.date) {
-        databaseInstance.select(database.raw(`IF(\`${tableAlias}\`.created <= ${context.date} AND \`${tableAlias}\`.expired > ${context.date},\`${tableAlias}\`.\`${column}\`, NULL) as \`${columnAlias}\``));
-      } else {
-        databaseInstance.select(database.raw(`IF(\`${tableAlias}\`.created <= ${database.raw('CURRENT_TIMESTAMP(6)')} AND \`${tableAlias}\`.expired > ${database.raw('CURRENT_TIMESTAMP(6)')},\`${tableAlias}\`.\`${column}\`, NULL) as \`${columnAlias}\``));
+        databaseInstance.select(`${tableAlias}.${column} as ${columnAlias}`);
+        /* FIXME: Need to find a way to treat itemJoins differently to prevent parent nullification when child is expired
+        databaseInstance.select(database.raw(`IF(\`${tableAlias}\`.created <= CURRENT_TIMESTAMP AND \`${tableAlias}\`.expired > CURRENT_TIMESTAMP,\`${tableAlias}\`.\`${column}\`, NULL) as \`${columnAlias}\``));
+        */
       }
     };
 
@@ -397,12 +425,24 @@ export class BaseModel {
       if (!ast) {
         databaseInstance.select(database.raw(`\"not_permitted\" as \`${selectAsKey.substring(0, selectAsKey.lastIndexOf(':'))}\``)); // eslint-disable-line no-useless-escape
       } else {
-        databaseInstance.select(appendIDSelect(sql.sqlTable, sql.uniqueKey, `${selectAsKey}id`, tableAlias));
+        databaseInstance.select(this.sqlIDSelect(sql.sqlTable, sql.uniqueKey, `${selectAsKey}id`, tableAlias));
       }
 
       Object.keys(ast).forEach((columnKey) => {
         if (sql.sqlColumns.has(columnKey) && ast[columnKey] && columnKey !== 'id') {
-          appendSelect(tableAlias, sql.sqlColumns.get(columnKey).column, `${selectAsKey}${columnKey}`, sql, sql.sqlColumns.get(columnKey).permissions);
+          if (Array.isArray(sql.sqlColumns.get(columnKey).column)) {
+            // if (Object.keys(ast[columnKey]).length) {
+            //   sql.sqlColumns.get(columnKey).column.filter(tempColumn => Object.keys(ast[columnKey]).includes(tempColumn)).forEach((column) => {
+            //     appendSelect(`${tableAlias}.${column}`, `${selectAsKey}${columnKey}:${column}`, sql);
+            //   });
+            // } else {
+            //   sql.sqlColumns.get(columnKey).column.forEach((column) => {
+            //     appendSelect(`${tableAlias}.${column}`, `${selectAsKey}${columnKey}:${column}`, sql);
+            //   });
+            // }
+          } else {
+            appendSelect(tableAlias, sql.sqlColumns.get(columnKey).column, `${selectAsKey}${columnKey}`, sql, sql.sqlColumns.get(columnKey).permissions);
+          }
         } else if (sql.sqlColumns.has(columnKey) && !ast[columnKey] && columnKey !== 'id') {
           databaseInstance.select(database.raw(`\"not_permitted\" as \`${selectAsKey}${columnKey}\``)); // eslint-disable-line no-useless-escape
         }
@@ -633,6 +673,7 @@ export class BaseModel {
 
         if (cloneSQLItemJoins.size && cloneSQLItemJoins.has(joinKey)) {
           cloneSQLItemJoins.set(joinKey, Object.assign(cloneSQLItemJoins.get(joinKey), { join: joinRegistry }));
+          // cloneSQLItemJoins.set(joinKey, joinRegistry);
         }
       });
     }
@@ -671,6 +712,26 @@ export class BaseModel {
       sqlItemJoins: cloneSQLItemJoins,
       sqlConnectionJoins,
     };
+  }
+
+  setQueryDate(databaseInstance, args, context, model, joinKey, parentAlias) { // eslint-disable-line no-unused-vars
+    const filterKeys = this.requestedFilterKeys(args.filter, model.graphQLTypeFields);
+
+    if (filterKeys.has('date')) {
+      databaseInstance.whereRaw(`IF(\`${joinKey}\`.id IS NULL, TRUE, \`${joinKey}\`.created <= ?)`, [filterKeys.get('date')['__eq']]);
+      databaseInstance.whereRaw(`IF(\`${joinKey}\`.id IS NULL, TRUE, \`${joinKey}\`.expired > ?)`, [filterKeys.get('date')['__eq']]);
+    } // eslint-disable-line brace-style
+      // else if (parentAlias) {
+    //   databaseInstance.whereRaw(`IF(\`${joinKey}\`.id IS NULL, TRUE, \`${joinKey}\`.created <= \`${parentAlias}\`.created)`);
+    //   databaseInstance.whereRaw(`IF(\`${joinKey}\`.id IS NULL, TRUE, \`${joinKey}\`.expired > \`${parentAlias}\`.created)`);
+    // }
+    else if (context.date) {
+      databaseInstance.whereRaw(`IF(\`${joinKey}\`.id IS NULL, TRUE, \`${joinKey}\`.created <= ?)`, [context.date]);
+      databaseInstance.whereRaw(`IF(\`${joinKey}\`.id IS NULL, TRUE, \`${joinKey}\`.expired > ?)`, [context.date]);
+    } else {
+      databaseInstance.whereRaw(`IF(\`${joinKey}\`.id IS NULL, TRUE, \`${joinKey}\`.created <= ?)`, [database.raw('CURRENT_TIMESTAMP(6)')]);
+      databaseInstance.whereRaw(`IF(\`${joinKey}\`.id IS NULL, TRUE, \`${joinKey}\`.expired > ?)`, [database.raw('CURRENT_TIMESTAMP(6)')]);
+    }
   }
 
   getAvailableFilters(parsedAST, sqlAST, context) {
@@ -767,7 +828,7 @@ export class BaseModel {
 
     return {
       sqlAST,
-      query: this.generateSqlSelect(databaseInstance, parsedAST, sqlAST, args, context)
+      query: this.generateSqlSelect(databaseInstance, parsedAST, sqlAST, context)
     };
   }
 }

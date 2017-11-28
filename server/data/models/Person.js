@@ -15,16 +15,19 @@ class Person extends BaseModel {
   sqlJoinRegistry() {
     return {
       creator: (databaseInstance, args, context, parsedAST, tableAlias, parentTableAlias) => {
+        this.setQueryDate(databaseInstance, args, context, Person, tableAlias, parentTableAlias);
         databaseInstance.leftJoin(`person as ${tableAlias}`, `${parentTableAlias}.creator_id`, `${tableAlias}.id`);
 
         return this.generateSqlJoins(databaseInstance, args, context, parsedAST, tableAlias);
       },
       address: (databaseInstance, args, context, parsedAST, tableAlias, parentTableAlias) => {
+        this.setQueryDate(databaseInstance, args, context, Address, tableAlias, parentTableAlias);
         databaseInstance.leftJoin(`address as ${tableAlias}`, `${parentTableAlias}.address_id`, `${tableAlias}.id`);
 
         return Address.generateSqlJoins(databaseInstance, args, context, parsedAST, tableAlias);
       },
       login: (databaseInstance, args, context, parsedAST, tableAlias, parentTableAlias) => {
+        this.setQueryDate(databaseInstance, args, context, Login, tableAlias, parentTableAlias);
         databaseInstance.leftJoin(`login as ${tableAlias}`, `${parentTableAlias}.id`, `${tableAlias}.person_id`);
 
         return Login.generateSqlJoins(databaseInstance, args, context, parsedAST, tableAlias);

@@ -10,6 +10,7 @@ class State extends BaseModel {
   sqlJoinRegistry() {
     return {
       creator: (databaseInstance, args, context, parsedAST, tableAlias, parentTableAlias) => {
+        this.setQueryDate(databaseInstance, args, context, Person, tableAlias, parentTableAlias);
         databaseInstance.leftJoin(`person as ${tableAlias}`, `${parentTableAlias}.creator_id`, `${tableAlias}.id`);
 
         return Person.generateSqlJoins(databaseInstance, args, context, parsedAST, tableAlias);
