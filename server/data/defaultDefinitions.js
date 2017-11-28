@@ -2,6 +2,9 @@ import {
   fromGlobalId,
   nodeDefinitions,
 } from 'graphql-relay';
+import {
+  GraphQLError
+} from 'graphql';
 
 import * as models from './models';
 
@@ -14,19 +17,23 @@ import * as models from './models';
 export const { nodeInterface, nodeField } = nodeDefinitions(
   async (globalId, context, info) => { // eslint-disable-line no-unused-vars
     const { type, id } = fromGlobalId(globalId);
-
+    if (!type || !id) {
+      return null;
+    }
 
     if (models[type]) {
-      const node = type === 'Viewer' ? models[type].getViewer({ context, info }) : await models[type].findById(id, context, info);
+      const node = type === 'Viewer' ? models[type].getViewer({
+        context,
+        info
+      }) : await models[type].findById(id, context, info);
 
       if (node) {
         return { ...node, type: models[type].graphQLType };
       }
-
       return null;
     }
 
-    return null;
+    throw new GraphQLError('No such type!');
   },
   (obj) => {
     if (obj && obj.type) {

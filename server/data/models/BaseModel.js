@@ -509,9 +509,9 @@ export class BaseModel {
           });
           Object.keys(sqlAST.sqlItemJoins).forEach((key) => {
             const itemJoins = sqlAST.sqlItemJoins[key];
-            itemJoins.forEach((itemJoin) => {
+            itemJoins.forEach((itemJoin, itemJoinKey) => {
               if (itemJoin.join) {
-                self.processSearch(this, searchArg, itemJoin.join, `${tableAlias}-${itemJoin.join.sqlTable}`, true);
+                self.processSearch(this, searchArg, itemJoin.join, `${tableAlias}-${itemJoinKey}`, true);
               }
             });
           });
@@ -523,9 +523,9 @@ export class BaseModel {
           });
           Object.keys(sqlAST.sqlItemJoins).forEach((key) => {
             const itemJoins = sqlAST.sqlItemJoins[key];
-            itemJoins.forEach((itemJoin) => {
+            itemJoins.forEach((itemJoin, itemJoinKey) => {
               if (itemJoin.join) {
-                self.processSearch(this, searchArg, itemJoin.join, `${tableAlias}-${itemJoin.join.sqlTable}`, true);
+                self.processSearch(this, searchArg, itemJoin.join, `${tableAlias}-${itemJoinKey}`, true);
               }
             });
           });
