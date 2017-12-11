@@ -51,6 +51,7 @@ const multerMiddleware = multer(
     { name: 'someName', maxCount: 1 },
   ]);
 
+// not needed, just an example
 const ipLimiter = new RateLimit({
   windowMs: 2 * 60 * 1000, // 2 minutes
   max: 50,
