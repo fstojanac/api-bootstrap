@@ -23,7 +23,7 @@ const KnexSessionStore = require('connect-session-knex')(session);
 const server = express();
 
 const corsOptions = {
-  origin: config.adminWeb,
+  origin: (origin, callback) => callback(null, true),
   credentials: true,
   optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
 };
