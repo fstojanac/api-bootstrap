@@ -10,18 +10,13 @@ import {
 import { nodeInterface } from '../defaultDefinitions';
 
 import {
-  queryAddress,
-  queryAddressConnection,
   queryLogin,
   queryLoginConnection,
   queryPerson,
   queryPersonConnection,
-  queryPersonAddress,
-  queryPersonAddressConnection,
   queryRole,
   queryRoleConnection,
-  queryState,
-  queryStateConnection,
+  queryBraintree
 }
   from
     './index';
@@ -42,18 +37,13 @@ export const viewerType = new GraphQLObjectType({
     ip: {
       type: GraphQLString
     },
-    address: queryAddress,
-    addressConnection: queryAddressConnection,
+    braintree: queryBraintree,
     login: queryLogin,
     loginConnection: queryLoginConnection,
     person: queryPerson,
     personConnection: queryPersonConnection,
-    personAddress: queryPersonAddress,
-    personAddressConnection: queryPersonAddressConnection,
     role: queryRole,
     roleConnection: queryRoleConnection,
-    state: queryState,
-    stateConnection: queryStateConnection,
   }),
   interfaces: () => [nodeInterface]
 });

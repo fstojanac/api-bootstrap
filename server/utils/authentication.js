@@ -3,6 +3,7 @@ import config from '../config/environment';
 
 const ANONYMOUS_TOKEN_DATA = {
   personId: null,
+  braintreeCustomerId: null,
   accessLevel: 128,
   ip: null
 };

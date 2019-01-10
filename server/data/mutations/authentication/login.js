@@ -41,8 +41,7 @@ export const login = mutationWithClientMutationId({
   mutateAndGetPayload: async ({ email, password }, context) => {
     handleMaxPermission(context.request.user.accessLevel, 128);
     let token = null;
-    const loginRequest = await database
-      .from('login')
+    const loginRequest = await database('login')
       .leftJoin('person', 'login.person_id', 'person.id')
       .where('person.expired', '>=', database.raw('CURRENT_TIMESTAMP(6)'))
       .where('login.expired', '>=', database.raw('CURRENT_TIMESTAMP(6)'))
@@ -55,7 +54,8 @@ export const login = mutationWithClientMutationId({
     if (loginRequest && bcrypt.compareSync(password, loginRequest.password_hash)) {
       token = createToken(context.request, context.response, {
         personId: toGlobalId('Person', `${loginRequest.person_id}:${loginRequest.expired}`),
-        accessLevel: 32,
+        braintreeCustomerId: loginRequest.braintree_customer_id,
+        accessLevel: loginRequest.access_level,
       });
     } else {
       throw new GraphQLError('Login error: Invalid account');

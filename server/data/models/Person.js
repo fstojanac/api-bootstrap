@@ -6,7 +6,6 @@ import database from '../database';
 import { BaseModel } from './BaseModel';
 import { personType } from '../types';
 import {
-  Address,
   Login,
 } from './';
 
@@ -20,19 +19,11 @@ class Person extends BaseModel {
 
         return this.generateSqlJoins(databaseInstance, args, context, parsedAST, tableAlias);
       },
-      address: (databaseInstance, args, context, parsedAST, tableAlias, parentTableAlias) => {
-        this.setQueryDate(databaseInstance, args, context, Address, tableAlias, parentTableAlias);
-        databaseInstance.leftJoin(`address as ${tableAlias}`, `${parentTableAlias}.address_id`, `${tableAlias}.id`);
-
-        return Address.generateSqlJoins(databaseInstance, args, context, parsedAST, tableAlias);
-      },
       login: (databaseInstance, args, context, parsedAST, tableAlias, parentTableAlias) => {
         this.setQueryDate(databaseInstance, args, context, Login, tableAlias, parentTableAlias);
         databaseInstance.leftJoin(`login as ${tableAlias}`, `${parentTableAlias}.id`, `${tableAlias}.person_id`);
 
         return Login.generateSqlJoins(databaseInstance, args, context, parsedAST, tableAlias);
-      },
-      personAddressConnection: () => {
       },
       loginConnection: () => {
       },
@@ -88,12 +79,6 @@ class Person extends BaseModel {
     const parsedAST = this.parseAST(ast);
     const sqlAST = this.generateSqlJoins(databaseInstance, args, context, parsedAST);
     const filterKeys = this.requestedFilterKeys(args.filter, sqlAST);
-
-    whereArgs.forEach((arg) => {
-      if (arg['address.id']) {
-        databaseInstance.where('person.address_id', arg['address.id']);
-      }
-    });
 
     if (filterKeys.has('date')) {
       databaseInstance.where('person.created', '<=', filterKeys.get('date')['__eq']);

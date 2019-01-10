@@ -1,9 +1,7 @@
 /* eslint-disable no-param-reassign */
 import {
   GraphQLNonNull,
-  GraphQLID,
   GraphQLString,
-  GraphQLFloat,
   GraphQLError,
 } from 'graphql';
 
@@ -15,6 +13,7 @@ import {
 } from 'graphql-relay';
 
 import bcrypt from 'bcrypt-nodejs';
+import gateway from '../../braintree';
 import database from '../../database';
 import { handleMaxPermission } from '../../../utils';
 import {
@@ -36,27 +35,6 @@ export const signUp = mutationWithClientMutationId({
     },
     lastName: {
       type: new GraphQLNonNull(GraphQLString),
-    },
-    address: {
-      type: new GraphQLNonNull(GraphQLString),
-    },
-    city: {
-      type: new GraphQLNonNull(GraphQLString),
-    },
-    stateId: {
-      type: new GraphQLNonNull(GraphQLID),
-    },
-    zip: {
-      type: new GraphQLNonNull(GraphQLString),
-    },
-    longitude: {
-      type: new GraphQLNonNull(GraphQLFloat),
-    },
-    latitude: {
-      type: new GraphQLNonNull(GraphQLFloat),
-    },
-    instructions: {
-      type: GraphQLString,
     },
     email: {
       type: new GraphQLNonNull(GraphQLString),
@@ -89,7 +67,7 @@ export const signUp = mutationWithClientMutationId({
       }
     }
   },
-  mutateAndGetPayload: async ({ firstName, lastName, address, city, stateId, zip, latitude, longitude, instructions, email, password }, context) => {
+  mutateAndGetPayload: async ({ firstName, lastName, email, password }, context) => {
     handleMaxPermission(context.request.user.accessLevel, 128);
     const availableLogin = await database('login')
       .where({ email })
@@ -100,48 +78,19 @@ export const signUp = mutationWithClientMutationId({
       throw new GraphQLError('User information already taken');
     }
 
-    if (stateId) {
-      const stateIds = fromGlobalId(stateId).id.split(':');
-      stateId = stateIds[0];
-    }
-
-    let insertedAddress = null;
-    if (address && city && zip && stateId) {
-      insertedAddress = await database('address')
-        .select('address.id')
-        .where({ address, city, state_id: stateId, zip })
-        .then((res) => {
-          if (!res[0]) {
-            return null;
-          }
-          return res[0].id;
-        });
-
-      if (!insertedAddress) {
-        insertedAddress = await database('address').insert({
-          creator_id: context.request.user.personId ? fromGlobalId(context.request.user.personId).id.split(':')[0] : null,
-          address,
-          city,
-          state_id: stateId,
-          zip,
-          latitude,
-          longitude,
-        }).then(res => res[0]);
-      }
-    }
+    const braintreeCustomer = await gateway.customer.create({
+      firstName,
+      lastName,
+      email,
+    }).then(res => res.customer);
 
     const insertedPerson = await database('person').insert({
       creator_id: context.request.user.personId ? fromGlobalId(context.request.user.personId).id.split(':')[0] : null,
       first_name: firstName,
       last_name: lastName,
-      address_id: insertedAddress,
+      braintree_customer_id: braintreeCustomer.id
     });
-    await database('person_address').insert({
-      creator_id: context.request.user.personId ? fromGlobalId(context.request.user.personId).id.split(':')[0] : null,
-      person_id: insertedPerson,
-      address_id: insertedAddress,
-      instructions
-    });
+
     const selectedPerson = await database('person')
       .where({ id: insertedPerson })
       .where('expired', '>', database.raw('CURRENT_TIMESTAMP(6)'))
@@ -162,6 +111,7 @@ export const signUp = mutationWithClientMutationId({
 
     const token = createToken(context.request, context.response, {
       personId: toGlobalId('Person', `${selectedPerson.id}:${selectedPerson.expired}`),
+      braintreeCustomerId: selectedPerson.braintree_customer_id,
       accessLevel: 32,
     });
 

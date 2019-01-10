@@ -388,35 +388,11 @@ export class BaseModel {
     parsedAST = this.checkReadPermission(context.request.user.accessLevel, sqlAST, parsedAST); // eslint-disable-line no-param-reassign
 
 
-    const appendSelect = (tableAlias, column, columnAlias, columnSqlAST, permissions) => {
-      if (columnSqlAST.sqlColumns.has('locationId') && this.filterByLocation(context.request.user.accessLevel, permissions)) {
-        const appliedRoles = context.request.user.locationAccessLevel.filter(userRole => (
-          permissions.filter(columnRole => (
-            columnRole.group === userRole.group && columnRole.read
-          )).length
-        ));
-
-        if (appliedRoles.length) {
-          const locations = appliedRoles.reduce((a, b) => {
-            if (a.locationIds) {
-              return a.locationIds.concat(b.locationIds);
-            }
-            return a.concat(b.locationIds);
-          });
-          if (Array.isArray(locations)) {
-            const tableName = `\`${tableAlias}\`.\`${columnSqlAST.sqlTable === 'location' ? 'id' : 'location_id'}\``;
-            databaseInstance.select(database.raw(`IF(${tableName} IN (${locations.length ? locations.join() : 0}) OR ${tableName} IS NULL, \`${tableAlias}\`.\`${column}\`, 'not_permitted') as \`${columnAlias}\``));
-          } else {
-            const tableName = `\`${tableAlias}\`.\`${columnSqlAST.sqlTable === 'location' ? 'id' : 'location_id'}\``;
-            databaseInstance.select(database.raw(`IF(${tableName} IN (${locations.locationIds.length ? locations.locationIds.join() : 0}) OR ${tableName} IS NULL, \`${tableAlias}\`.\`${column}\`, 'not_permitted') as \`${columnAlias}\``));
-          }
-        }
-      } else {
-        databaseInstance.select(`${tableAlias}.${column} as ${columnAlias}`);
+    const appendSelect = (tableAlias, column, columnAlias) => {
+      databaseInstance.select(`${tableAlias}.${column} as ${columnAlias}`);
         /* FIXME: Need to find a way to treat itemJoins differently to prevent parent nullification when child is expired
         databaseInstance.select(database.raw(`IF(\`${tableAlias}\`.created <= CURRENT_TIMESTAMP AND \`${tableAlias}\`.expired > CURRENT_TIMESTAMP,\`${tableAlias}\`.\`${column}\`, NULL) as \`${columnAlias}\``));
         */
-      }
     };
 
     const sqlASTToSelect = (ast, sql, selectAsKey = '', tableAlias = sqlAST.sqlTable) => {

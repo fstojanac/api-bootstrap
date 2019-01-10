@@ -8,7 +8,13 @@ const config = {
   env: process.env.NODE_ENV || 'development',
   port: process.env.PORT || 8085,
   web: 'localhost',
-  adminWeb: 'http://localhost:8081',
+  graphQLWeb: 'http://localhost:8085',
+  adminWeb: 'http://localhost:8080',
+  braintree: {
+    merchantId: 'h272xy28cy3dy524',
+    publicKey: 'q7z8gd4qgtg8xm6r',
+    privateKey: 'c868ac73e94175adefc1080007f41ca8'
+  },
   systemUser: {
     email: 'root',
     password: 'LU#98KBpRqUXJ8aMCUX+k3s8^N5qte!Cq2na9Tqjdj-N8zuW*UXEL*ATNN8K8SLN',

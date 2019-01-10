@@ -19,9 +19,7 @@ import {
   connectionWithCountDefinition,
 } from '../connectionDefinition';
 import {
-  addressType,
   loginType,
-  queryPersonAddressConnection,
 } from './';
 
 import * as models from '../models';
@@ -30,111 +28,121 @@ import {
   filterType,
   generateFilterArgs,
 } from '../filter';
+import gateway from '../braintree';
 
 export const personType = new GraphQLObjectType({
   name: 'Person',
   sqlTable: 'person',
   uniqueKey: ['id', 'expired'],
   searchKey: ['first_name', 'last_name'],
-  permissions: [{
-    group: 1,
-    read: true,
-    write: true,
-    remove: true,
-  }, {
-    group: 2,
-    read: true,
-    write: true,
-    remove: true,
-  }, {
-    group: 4,
-    read: true,
-    write: true,
-    remove: true,
-  }, {
-    group: 8,
-    read: true,
-    write: true,
-    remove: true,
-  }, {
-    group: 16,
-    read: true,
-    write: true,
-    remove: true,
-  }, {
-    group: 32,
-    read: true,
-    write: true,
-    remove: true,
-  }, {
-    group: 64,
-    read: true,
-    write: true,
-    remove: true,
-  }],
+  permissions: [
+    {
+      group: 1,
+      read: true,
+      write: true,
+      remove: true
+    },
+    {
+      group: 2,
+      read: true,
+      write: true,
+      remove: true
+    },
+    {
+      group: 4,
+      read: true,
+      write: true,
+      remove: true
+    },
+    {
+      group: 8,
+      read: true,
+      write: true,
+      remove: true
+    },
+    {
+      group: 16,
+      read: true,
+      write: true,
+      remove: true
+    },
+    {
+      group: 32,
+      read: true,
+      write: true,
+      remove: true
+    },
+    {
+      group: 64,
+      read: true,
+      write: true,
+      remove: true
+    }
+  ],
   description: '',
   fields: () => ({
     id: {
-      type: new GraphQLNonNull(GraphQLID),
+      type: new GraphQLNonNull(GraphQLID)
     },
     permission: {
       sqlIgnore: true,
-      type: GraphQLJSON,
+      type: GraphQLJSON
     },
     personId: {
       sqlColumn: 'id',
-      type: GraphQLInt,
+      type: GraphQLInt
     },
     creatorId: {
       sqlColumn: 'creator_id',
       type: GraphQLInt,
-      permissions: [{
-        group: 1,
-        read: true,
-        write: true,
-        remove: true,
-      }],
-    },
-    addressId: {
-      sqlColumn: 'address_id',
-      type: GraphQLInt,
+      permissions: [
+        {
+          group: 1,
+          read: true,
+          write: true,
+          remove: true
+        }
+      ]
     },
     firstName: {
       sqlColumn: 'first_name',
       prettifiedName: 'First name',
-      type: GraphQLString,
+      type: GraphQLString
     },
     lastName: {
       sqlColumn: 'last_name',
       prettifiedName: 'Last name',
-      type: GraphQLString,
+      type: GraphQLString
+    },
+    braintreeCustomerId: {
+      sqlColumn: 'braintree_customer_id',
+      prettifiedName: 'Braintree customer ID',
+      type: GraphQLString
+    },
+    braintreeCustomer: {
+      sqlColumn: 'braintree_customer_id',
+      type: GraphQLJSON,
+      resolve: source =>
+               source.braintreeCustomer && gateway.customer.find(
+                 source.braintreeCustomer
+               )
     },
     created: {
       filterIgnore: true,
-      type: GraphQLString,
+      type: GraphQLString
     },
     expired: {
       filterIgnore: true,
-      type: GraphQLString,
+      type: GraphQLString
     },
     creator: {
       join: 'one-to-one',
-      type: personType,
-    },
-    address: {
-      join: 'one-to-one',
-      type: addressType,
+      type: personType
     },
     login: {
       join: 'one-to-one',
-      type: loginType,
-    },
-    personAddressConnection: {
-      join: 'one-to-many',
-      sqlColumn: 'person.id',
-      ...queryPersonAddressConnection,
-      resolve: (source, args, context, info) => connectionWithCountDefinition(models.PersonAddress.getAllWhere(source.personAddressConnection, args, context, info), args, context, info)
-    },
+      type: loginType
+    }
   }),
   interfaces: () => [nodeInterface]
 });

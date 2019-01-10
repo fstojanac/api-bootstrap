@@ -1,219 +1,14 @@
-type Address implements Node {
-  id: ID!
-  permission: JSON
-  addressId: Int
-  address: String
-  city: String
-  zip: String
-  latitude: Float
-  longitude: Float
-  created: String
-  expired: String
-  creator: Person
-  state: State
-
-  # All addresses assigned to any person
-  personAddressConnection(after: String, first: Int, before: String, last: Int, sort: [PersonAddressSort], filter: [PersonAddressFilter], search: String): PersonAddressConnection
-
-  # Addresses assigned as default to any person
-  personConnection(after: String, first: Int, before: String, last: Int, sort: [PersonSort], filter: [PersonFilter], search: String): PersonConnection
-}
-
-# A connection to a list of items.
-type AddressConnection {
-  # Information to aid in pagination.
-  pageInfo: PageInfo!
-
-  # A list of edges.
-  edges: [AddressEdge]
-
-  # A count of the total number of objects in this connection, ignoring pagination. 
-  #     This allows a client to fetch the first five objects by passing "5" as the argument to "first", 
-  #     then fetch the total count so it could display "5 of 83", for example.
-  totalCount: Int!
-  availableFilters: JSON
-  availableSorts: JSON
-}
-
-# An edge in a connection.
-type AddressEdge {
-  # The item at the end of the edge
-  node: Address
-
-  # A cursor for use in pagination
-  cursor: String!
-}
-
-input AddressFilter {
-  id: IDFilter
-  permission: CustomFilter
-  addressId: IntFilter
-  address: StringFilter
-  city: StringFilter
-  zip: StringFilter
-  latitude: FloatFilter
-  longitude: FloatFilter
-  creator: [PersonFilter]
-  state: [StateFilter]
-  date: CustomFilter
-}
-
-input AddressSort {
-  id: Sort
-  permission: Sort
-  addressId: Sort
-  address: Sort
-  city: Sort
-  zip: Sort
-  latitude: Sort
-  longitude: Sort
-  created: Sort
-  expired: Sort
-  creator: [PersonSort]
-  state: [StateSort]
-}
-
-input CreateAddressMutationInput {
-  address: String!
-  city: String!
-  stateLabel: String
-  stateId: ID
-  zip: String!
-  longitude: Float
-  latitude: Float
-  clientMutationId: String
-}
-
-type CreateAddressMutationPayload {
-  address: Address
-  viewer: Viewer
-  addressEdge: AddressEdge
-  clientMutationId: String
-}
-
-input CreateEmployeeMutationInput {
-  firstName: String!
-  lastName: String!
-  address: String!
-  city: String!
-  stateId: ID!
-  zip: String!
-  longitude: Float
-  latitude: Float
-  email: String
-  roles: [RoleInput]
-  clientMutationId: String
-}
-
-type CreateEmployeeMutationPayload {
-  login: Login
-  person: Person
-  viewer: Viewer
-  personEdge: PersonEdge
-  loginEdge: LoginEdge
-  clientMutationId: String
-}
-
-input CreatePersonAddressMutationInput {
-  personId: ID!
-  addressId: ID
-  address: String
-  city: String
-  stateId: ID
-  zip: String
-  longitude: Float
-  latitude: Float
-  instructions: String
-  clientMutationId: String
-}
-
-type CreatePersonAddressMutationPayload {
-  personAddress: PersonAddress
-  viewer: Viewer
-  person: Person
-  personAddressEdge: PersonAddressEdge
-  clientMutationId: String
-}
-
-input CreatePersonAddressPhoneMutationInput {
-  firstName: String!
-  lastName: String!
-  address: String!
-  city: String!
-  stateId: ID!
-  zip: String!
-  instructions: String
-  longitude: Float
-  latitude: Float
-  email: String
-  password: String
-  clientMutationId: String
-}
-
-type CreatePersonAddressPhoneMutationPayload {
-  person: Person
-  viewer: Viewer
-  personEdge: PersonEdge
-  clientMutationId: String
-}
-
-input CreatePersonMutationInput {
-  addressId: ID
-  firstName: String!
-  lastName: String!
-  clientMutationId: String
-}
-
-type CreatePersonMutationPayload {
-  personId: ID
-  person: Person
-  viewer: Viewer
-  personEdge: PersonEdge
-  clientMutationId: String
+type Braintree {
+  id: ID
+  plans: [JSON]
+  clientToken: String
+  braintreeCustomer: JSON
 }
 
 scalar Custom
 
 input CustomFilter {
   __eq: Custom
-}
-
-input DashboardLoginMutationInput {
-  email: String!
-  password: String!
-  clientMutationId: String
-}
-
-type DashboardLoginMutationPayload {
-  viewer: Viewer
-  clientMutationId: String
-}
-
-input DeactivateEmployeeMutationInput {
-  loginId: ID!
-  clientMutationId: String
-}
-
-type DeactivateEmployeeMutationPayload {
-  removedLoginId: ID
-  login: Login
-  person: Person
-  viewer: Viewer
-  personEdge: PersonEdge
-  loginEdge: LoginEdge
-  clientMutationId: String
-}
-
-input FloatFilter {
-  __eq: Float
-  __neq: Float
-  __in: [Float]
-  __nin: [Float]
-  __gt: Float
-  __gte: Float
-  __lt: Float
-  __lte: Float
-  __null: Boolean
 }
 
 input ForgotPasswordMutationInput {
@@ -225,16 +20,6 @@ type ForgotPasswordMutationPayload {
   login: Login
   viewer: Viewer
   loginEdge: LoginEdge
-  clientMutationId: String
-}
-
-input GuestLoginMutationInput {
-  personId: ID!
-  clientMutationId: String
-}
-
-type GuestLoginMutationPayload {
-  viewer: Viewer
   clientMutationId: String
 }
 
@@ -349,27 +134,12 @@ type LogoutMutationPayload {
 }
 
 type Mutation {
-  dashboardLogin(input: DashboardLoginMutationInput!): DashboardLoginMutationPayload
-  guestLogin(input: GuestLoginMutationInput!): GuestLoginMutationPayload
   login(input: LoginMutationInput!): LoginMutationPayload
   logout(input: LogoutMutationInput!): LogoutMutationPayload
   signUp(input: SignUpMutationInput!): SignUpMutationPayload
-  createAddress(input: CreateAddressMutationInput!): CreateAddressMutationPayload
   forgotPassword(input: ForgotPasswordMutationInput!): ForgotPasswordMutationPayload
   resetPassword(input: ResetPasswordMutationInput!): ResetPasswordMutationPayload
   updatePassword(input: UpdatePasswordMutationInput!): UpdatePasswordMutationPayload
-  createEmployee(input: CreateEmployeeMutationInput!): CreateEmployeeMutationPayload
-  updateEmployee(input: UpdateEmployeeMutationInput!): UpdateEmployeeMutationPayload
-  deactivateEmployee(input: DeactivateEmployeeMutationInput!): DeactivateEmployeeMutationPayload
-  createPerson(input: CreatePersonMutationInput!): CreatePersonMutationPayload
-  updatePerson(input: UpdatePersonMutationInput!): UpdatePersonMutationPayload
-  createPersonAddressPhone(input: CreatePersonAddressPhoneMutationInput!): CreatePersonAddressPhoneMutationPayload
-  updatePersonAddressPhone(input: UpdatePersonAddressPhoneMutationInput!): UpdatePersonAddressPhoneMutationPayload
-  updateDefaultAddress(input: UpdateDefaultAddressMutationInput!): UpdateDefaultAddressMutationPayload
-  updateDefaultPersonvehicle(input: UpdateDefaultPersonvehicleMutationInput!): UpdateDefaultPersonvehicleMutationPayload
-  createPersonAddress(input: CreatePersonAddressMutationInput!): CreatePersonAddressMutationPayload
-  updatePersonAddress(input: UpdatePersonAddressMutationInput!): UpdatePersonAddressMutationPayload
-  removePersonAddress(input: RemovePersonAddressMutationInput!): RemovePersonAddressMutationPayload
 }
 
 # An object with an ID
@@ -398,72 +168,14 @@ type Person implements Node {
   permission: JSON
   personId: Int
   creatorId: Int
-  addressId: Int
   firstName: String
   lastName: String
+  braintreeCustomerId: String
+  braintreeCustomer: JSON
   created: String
   expired: String
   creator: Person
-  address: Address
   login: Login
-  personAddressConnection(after: String, first: Int, before: String, last: Int, sort: [PersonAddressSort], filter: [PersonAddressFilter], search: String): PersonAddressConnection
-}
-
-type PersonAddress implements Node {
-  id: ID!
-  permission: JSON
-  instructions: String
-  created: String
-  expired: String
-  creator: Person
-  person: Person
-  address: Address
-}
-
-# A connection to a list of items.
-type PersonAddressConnection {
-  # Information to aid in pagination.
-  pageInfo: PageInfo!
-
-  # A list of edges.
-  edges: [PersonAddressEdge]
-
-  # A count of the total number of objects in this connection, ignoring pagination. 
-  #     This allows a client to fetch the first five objects by passing "5" as the argument to "first", 
-  #     then fetch the total count so it could display "5 of 83", for example.
-  totalCount: Int!
-  availableFilters: JSON
-  availableSorts: JSON
-}
-
-# An edge in a connection.
-type PersonAddressEdge {
-  # The item at the end of the edge
-  node: PersonAddress
-
-  # A cursor for use in pagination
-  cursor: String!
-}
-
-input PersonAddressFilter {
-  id: IDFilter
-  permission: CustomFilter
-  instructions: StringFilter
-  creator: [PersonFilter]
-  person: [PersonFilter]
-  address: [AddressFilter]
-  date: CustomFilter
-}
-
-input PersonAddressSort {
-  id: Sort
-  permission: Sort
-  instructions: Sort
-  created: Sort
-  expired: Sort
-  creator: [PersonSort]
-  person: [PersonSort]
-  address: [AddressSort]
 }
 
 # A connection to a list of items.
@@ -496,11 +208,11 @@ input PersonFilter {
   permission: CustomFilter
   personId: IntFilter
   creatorId: IntFilter
-  addressId: IntFilter
   firstName: StringFilter
   lastName: StringFilter
+  braintreeCustomerId: StringFilter
+  braintreeCustomer: CustomFilter
   creator: [PersonFilter]
-  address: [AddressFilter]
   login: [LoginFilter]
   date: CustomFilter
 }
@@ -510,13 +222,13 @@ input PersonSort {
   permission: Sort
   personId: Sort
   creatorId: Sort
-  addressId: Sort
   firstName: Sort
   lastName: Sort
+  braintreeCustomerId: Sort
+  braintreeCustomer: Sort
   created: Sort
   expired: Sort
   creator: [PersonSort]
-  address: [AddressSort]
   login: [LoginSort]
 }
 
@@ -527,19 +239,6 @@ type Query {
     id: ID!
   ): Node
   viewer: Viewer
-}
-
-input RemovePersonAddressMutationInput {
-  personAddressId: ID!
-  clientMutationId: String
-}
-
-type RemovePersonAddressMutationPayload {
-  viewer: Viewer
-  person: Person
-  address: Address
-  removedPersonAddressId: ID!
-  clientMutationId: String
 }
 
 input ResetPasswordMutationInput {
@@ -603,10 +302,6 @@ input RoleFilter {
   creator: [PersonFilter]
 }
 
-input RoleInput {
-  roleId: ID!
-}
-
 input RoleSort {
   id: Sort
   permission: Sort
@@ -618,20 +313,9 @@ input RoleSort {
   creator: [PersonSort]
 }
 
-input RoleUpdate {
-  roleId: ID!
-}
-
 input SignUpMutationInput {
   firstName: String!
   lastName: String!
-  address: String!
-  city: String!
-  stateId: ID!
-  zip: String!
-  longitude: Float!
-  latitude: Float!
-  instructions: String
   email: String!
   password: String!
   clientMutationId: String
@@ -650,65 +334,6 @@ enum Sort {
   DESC
 }
 
-type State implements Node {
-  id: ID!
-  permission: JSON
-  stateId: Int
-  label: String
-  abbreviation: String
-  created: String
-  updated: String
-  creator: Person
-  addressConnection(after: String, first: Int, before: String, last: Int, sort: [AddressSort], filter: [AddressFilter], search: String): AddressConnection
-}
-
-# A connection to a list of items.
-type StateConnection {
-  # Information to aid in pagination.
-  pageInfo: PageInfo!
-
-  # A list of edges.
-  edges: [StateEdge]
-
-  # A count of the total number of objects in this connection, ignoring pagination. 
-  #     This allows a client to fetch the first five objects by passing "5" as the argument to "first", 
-  #     then fetch the total count so it could display "5 of 83", for example.
-  totalCount: Int!
-  availableFilters: JSON
-  availableSorts: JSON
-}
-
-# An edge in a connection.
-type StateEdge {
-  # The item at the end of the edge
-  node: State
-
-  # A cursor for use in pagination
-  cursor: String!
-}
-
-input StateFilter {
-  id: IDFilter
-  permission: CustomFilter
-  stateId: IntFilter
-  label: StringFilter
-  abbreviation: StringFilter
-  created: StringFilter
-  updated: StringFilter
-  creator: [PersonFilter]
-}
-
-input StateSort {
-  id: Sort
-  permission: Sort
-  stateId: Sort
-  label: Sort
-  abbreviation: Sort
-  created: Sort
-  updated: Sort
-  creator: [PersonSort]
-}
-
 input StringFilter {
   __eq: String
   __neq: String
@@ -717,55 +342,6 @@ input StringFilter {
   __li: String
   __nli: String
   __null: Boolean
-}
-
-input UpdateDefaultAddressMutationInput {
-  personId: ID!
-  addressId: ID!
-  clientMutationId: String
-}
-
-type UpdateDefaultAddressMutationPayload {
-  person: Person
-  viewer: Viewer
-  personEdge: PersonEdge
-  clientMutationId: String
-}
-
-input UpdateDefaultPersonvehicleMutationInput {
-  personId: ID!
-  personvehicleId: ID!
-  clientMutationId: String
-}
-
-type UpdateDefaultPersonvehicleMutationPayload {
-  person: Person
-  viewer: Viewer
-  personEdge: PersonEdge
-  clientMutationId: String
-}
-
-input UpdateEmployeeMutationInput {
-  loginId: ID!
-  firstName: String
-  lastName: String
-  address: String
-  city: String
-  stateId: ID
-  zip: String
-  longitude: Float
-  latitude: Float
-  roles: [RoleUpdate]
-  clientMutationId: String
-}
-
-type UpdateEmployeeMutationPayload {
-  login: Login
-  person: Person
-  viewer: Viewer
-  personEdge: PersonEdge
-  loginEdge: LoginEdge
-  clientMutationId: String
 }
 
 input UpdatePasswordMutationInput {
@@ -781,68 +357,6 @@ type UpdatePasswordMutationPayload {
   clientMutationId: String
 }
 
-input UpdatePersonAddressMutationInput {
-  personId: ID!
-  addressId: ID!
-  address: String!
-  city: String!
-  stateId: ID!
-  zip: String!
-  longitude: Float
-  latitude: Float
-  instructions: String
-  clientMutationId: String
-}
-
-type UpdatePersonAddressMutationPayload {
-  personAddress: PersonAddress
-  viewer: Viewer
-  personAddressEdge: PersonAddressEdge
-  clientMutationId: String
-}
-
-input UpdatePersonAddressPhoneMutationInput {
-  personId: ID!
-  addressId: ID
-  firstName: String
-  lastName: String
-  address: String
-  city: String
-  stateId: ID
-  zip: String
-  instructions: String
-  longitude: Float
-  latitude: Float
-  clientMutationId: String
-}
-
-type UpdatePersonAddressPhoneMutationPayload {
-  person: Person
-  viewer: Viewer
-  personEdge: PersonEdge
-  clientMutationId: String
-}
-
-input UpdatePersonMutationInput {
-  personId: ID!
-  firstName: String
-  lastName: String
-  address: String
-  city: String
-  stateId: ID
-  zip: String
-  longitude: Float
-  latitude: Float
-  clientMutationId: String
-}
-
-type UpdatePersonMutationPayload {
-  person: Person
-  viewer: Viewer
-  personEdge: PersonEdge
-  clientMutationId: String
-}
-
 type Viewer implements Node {
   # The ID of an object
   id: ID!
@@ -850,16 +364,11 @@ type Viewer implements Node {
   accessLevel: Int
   token: String
   ip: String
-  address(id: ID!): Address
-  addressConnection(after: String, first: Int, before: String, last: Int, sort: [AddressSort], filter: [AddressFilter], search: String): AddressConnection
+  braintree: Braintree
   login(id: ID!): Login
   loginConnection(after: String, first: Int, before: String, last: Int, sort: [LoginSort], filter: [LoginFilter], search: String): LoginConnection
   person(id: ID!): Person
   personConnection(after: String, first: Int, before: String, last: Int, sort: [PersonSort], filter: [PersonFilter], search: String): PersonConnection
-  personAddress(id: ID!): PersonAddress
-  personAddressConnection(after: String, first: Int, before: String, last: Int, sort: [PersonAddressSort], filter: [PersonAddressFilter], search: String): PersonAddressConnection
   role(id: ID!): Role
   roleConnection(after: String, first: Int, before: String, last: Int, sort: [RoleSort], filter: [RoleFilter], search: String): RoleConnection
-  state(id: ID!): State
-  stateConnection(after: String, first: Int, before: String, last: Int, sort: [StateSort], filter: [StateFilter], search: String): StateConnection
 }
