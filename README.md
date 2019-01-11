@@ -2,7 +2,7 @@
 
 1. docker-compose up for database
 2. cd server && npm i && npm start
-3. cd frontend/client && npm i && npm start
+3. cd frontend/react && npm i && npm start
 4. Enjoy!
 
 user data: email: admin@admin.com / password: test
