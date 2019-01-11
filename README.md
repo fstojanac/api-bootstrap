@@ -6,6 +6,7 @@
 4. Enjoy!
 
 user data: email: admin@admin.com / password: test
+
 braintree sandbox: fstojanac-braintree / password: zuUJSrFXGTU86fJ
 
 ## Schema
