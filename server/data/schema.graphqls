@@ -3,6 +3,20 @@ type Braintree {
   plans: [JSON]
   clientToken: String
   braintreeCustomer: JSON
+  braintreeCustomerSubscription: JSON
+}
+
+input CreateSubscriptionMutationInput {
+  planId: String!
+  paymentMethodNonce: String!
+  discountId: String
+  cardType: String!
+  clientMutationId: String
+}
+
+type CreateSubscriptionMutationPayload {
+  viewer: Viewer
+  clientMutationId: String
 }
 
 scalar Custom
@@ -140,6 +154,7 @@ type Mutation {
   forgotPassword(input: ForgotPasswordMutationInput!): ForgotPasswordMutationPayload
   resetPassword(input: ResetPasswordMutationInput!): ResetPasswordMutationPayload
   updatePassword(input: UpdatePasswordMutationInput!): UpdatePasswordMutationPayload
+  createSubscription(input: CreateSubscriptionMutationInput!): CreateSubscriptionMutationPayload
 }
 
 # An object with an ID

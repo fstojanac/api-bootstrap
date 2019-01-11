@@ -1,8 +1,11 @@
 import { GraphQLObjectType, GraphQLList, GraphQLID, GraphQLString } from 'graphql';
-
+import {
+  fromGlobalId,
+} from 'graphql-relay';
 import GraphQLJSON from 'graphql-type-json';
 import gateway from '../braintree';
 import config from '../../config/environment';
+import database from '../database';
 
 export const braintreeType = new GraphQLObjectType({
   name: 'Braintree',
@@ -26,6 +29,25 @@ export const braintreeType = new GraphQLObjectType({
       resolve: (payload, args, context) => context.request.user.braintreeCustomerId && gateway.customer.find(
             context.request.user.braintreeCustomerId
                )
+    },
+    braintreeCustomerSubscription: {
+      type: GraphQLJSON,
+      resolve: async (payload, args, context) => {
+        if (!context.request.user.personId) {
+          return null;
+        }
+        const personId = fromGlobalId(context.request.user.personId).id.split(':')[0];
+        const subscription = await database('subscription')
+        .where('subscription.person_id', personId)
+        .where('subscription.expired', '>=', database.raw('CURRENT_TIMESTAMP(6)'))
+        .then(res => res[0]);
+
+        if (!subscription) {
+          return null;
+        }
+
+        return await gateway.subscription.find(subscription.braintree_subscription_id);
+      }
     }
   })
 });

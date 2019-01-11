@@ -1,17 +1,5 @@
 version: '3'
 services:
-  # graphql:
-  #   image: node:alpine
-  #   volumes:
-  #     - ./:/server
-  #   working_dir: /server
-  #   depends_on:
-  #     - db
-  #   environment:
-  #     NODE_ENV: development
-  #   ports:
-  #     - 8085:8085
-  #   command: npm start
   db:
     image: mysql:5.7
     command: mysqld --user=root

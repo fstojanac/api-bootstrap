@@ -12,7 +12,7 @@
     "build-server": "cross-env NODE_ENV=production ./node_modules/.bin/babel ./server --out-dir ./temp",
     "build-server-staging": "cross-env NODE_ENV=staging ./node_modules/.bin/babel ./server --out-dir ./temp",
     "lint": "eslint --ignore-path .gitignore server",
-    "lint-fix": "eslint --ignore-path .gitignore server --fix",
+    "lint-fix": "eslint --ignore-path .gitignore server frontend/client --fix",
     "temp": "rm -rf temp && mkdir temp",
     "clear": "rm -rf build && mv temp build && rm -rf temp",
     "clean": "rm -rf build && mv temp build && rm -rf temp",
