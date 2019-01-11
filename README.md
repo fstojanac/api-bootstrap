@@ -1,9 +1,12 @@
 ## Usage
 
-1. Create database from api-test.sql file
-2. Edit knexfile.js to match your connections details
-3. Start API server
+1. docker-compose up for database
+2. cd server && npm i && npm start
+3. cd frontend/client && npm i && npm start
 4. Enjoy!
+
+user data: email: admin@admin.com / password: test
+braintree sandbox: fstojanac-braintree / password: zuUJSrFXGTU86fJ
 
 ## Schema
 
